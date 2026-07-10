@@ -1,0 +1,142 @@
+# Global tracking directory for Vector's byte-level pointer registry
+data_dir = "/var/lib/vector"
+
+[api]
+enabled = false # Desactivat per estalviar recursos en l'entorn LXC
+
+# --- 1. SOURCE: Tail del log de Carparts ---
+[sources.rsyslog_logs]
+type = "file"
+include = ["/var/log/remote/10.0.27.223/docker-carparts-web.log"]
+read_from = "end"
+
+# --- 2. TRANSFORM: Filtre i estructuració de l'incident ---
+[transforms.parse_incident]
+type = "remap"
+inputs = ["rsyslog_logs"]
+source = """
+msg = string!(.message)
+
+# Pas 2: Avortem immediatament si la línia no conté cap patró rellevant
+if !match(msg, r'(?i)(TEST_DOCKER_(CARPARTS|EXPORT)_TFG|TEST_log_detector|\\[ERROR\\]|Traceback|Exception|Worker exiting|Connection refused|OperationalError|worker timeout|Out of memory|Killed process|sql[ _]injection|union([ +]|%20)+select)') {
+  abort
+}
+
+pattern = "unknown"
+severity = "info"
+
+# Pas 3: Classificació de l'incident
+if match(msg, r'(TEST_DOCKER_(CARPARTS|EXPORT)_TFG|TEST_log_detector)') {
+  pattern = "test_event"
+  severity = "info"
+} else if match(msg, r'(?i)(sql[ _]injection|union([ +]|%20)+select)') {
+  pattern = "sql_injection"
+  severity = "critical"
+} else if match(msg, r'(?i)(Connection refused|OperationalError)') {
+  pattern = "database_failure"
+  severity = "critical"
+} else if match(msg, r'(?i)worker timeout') {
+  pattern = "worker_timeout"
+  severity = "high"
+} else if match(msg, r'(?i)(Out of memory|Killed process)') {
+  pattern = "oom_crash"
+  severity = "critical"
+} else if match(msg, r'(\\[ERROR\\]|Traceback|Exception)') {
+  pattern = "gunicorn_error"
+  severity = "critical"
+} else if match(msg, r'Worker exiting') {
+  pattern = "worker_exit"
+  severity = "critical"
+}
+
+# Pas 4: Parseig de la línia rsyslog
+parsed = parse_regex(msg, r'^(?P<timestamp>[^ ]+) (?P<host>[^ ]+) (?P<service>[^ :]+):? (?P<log_msg>.*)$') ?? {}
+
+# Pas 5: Forcem la conversió de tipus (coercion) de 'any' a 'string' per evitar l'error de compilació
+log_host = string(parsed.host) ?? "unknown"
+log_service = string(parsed.service) ?? "unknown"
+log_timestamp = string(parsed.timestamp) ?? to_string(now())
+
+# Pas 6: Construcció del payload net per a n8n
+payload = {}
+payload.source = "rsyslog-detector"
+payload.host = log_host
+payload.service = log_service
+payload.severity = severity
+payload.pattern = pattern
+payload.summary = "Detected pattern: " + pattern
+payload.evidence = [msg]
+payload.log_path = "/var/log/remote/10.0.27.223/docker-carparts-web.log"
+payload.recommended_workflow = log_service + "_recovery"
+payload.timestamp = log_timestamp
+
+. = payload
+"""
+
+# --- 3. TRANSFORM: Cooldown / Rate Limiting ---
+[transforms.throttle_incidents]
+type = "throttle"
+inputs = ["parse_incident"]
+window_secs = 60
+key_field = "pattern"
+threshold = 1
+
+# --- 4. TRANSFORM: Route Split ---
+[transforms.route_incidents]
+type = "route"
+inputs = ["throttle_incidents"]
+route.sql_injection = '.pattern == "sql_injection"'
+
+# --- 5. SINKS ---
+
+# A. Remote Webhook (Odin) - Non-Security
+[sinks.n8n_webhook]
+type = "http"
+inputs = ["route_incidents._unmatched"]
+uri = "https://n8n.chestnut-boga.ts.net/webhook-test/incident-intake"
+method = "post"
+compression = "none"
+
+[sinks.n8n_webhook.encoding]
+codec = "json"
+
+[sinks.n8n_webhook.batch]
+max_events = 1
+
+[sinks.n8n_webhook.request]
+headers = { "X-TFG-Token" = "canvia-aquest-token", "Content-Type" = "application/json" }
+
+# B. Remote Webhook (Odin) - Security
+[sinks.n8n_security_webhook]
+type = "http"
+inputs = ["route_incidents.sql_injection"]
+uri = "https://n8n.chestnut-boga.ts.net/webhook-test/security-incident-intake"
+method = "post"
+compression = "none"
+
+[sinks.n8n_security_webhook.encoding]
+codec = "json"
+
+[sinks.n8n_security_webhook.batch]
+max_events = 1
+
+[sinks.n8n_security_webhook.request]
+headers = { "X-TFG-Token" = "canvia-aquest-token", "Content-Type" = "application/json" }
+
+# C. Local Audit Log - Non-Security
+[sinks.local_audit]
+type = "file"
+inputs = ["route_incidents._unmatched"]
+path = "/var/lib/vector/audit.log"
+
+[sinks.local_audit.encoding]
+codec = "json"
+
+# D. Local Audit Log - Security
+[sinks.local_security_audit]
+type = "file"
+inputs = ["route_incidents.sql_injection"]
+path = "/var/lib/vector/security_audit.log"
+
+[sinks.local_security_audit.encoding]
+codec = "json"
