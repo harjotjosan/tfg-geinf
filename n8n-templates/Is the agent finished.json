@@ -1,0 +1,192 @@
+{
+  "name": "Is the agent finished",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -400,
+        -112
+      ],
+      "id": "113a1bbd-a86e-46fd-9559-5a2aafb2135d",
+      "name": "When chat message received",
+      "webhookId": "94519bba-2e17-4934-8bfb-c676b03c0fc7"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ (() => { try { return $('When Executed by Another Workflow').first().json.message; } catch(e) { return $('When chat message received').first().json.chatInput; } })() }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You will receive a message from an AI assistant that is trying to troubleshoot and fix an IT problem.\nYour job is to identify if the task is completed or there are still steps to complete it. you must return the output in a JSON structure.\nIf you reach at a conclusion that the task is not complete, then you must set the task_complete variable to false and return an instruction to send to the AI Assistant telling it to keep working in the action_for_assistant variable. \n\nOUTPUT FORMAT (STRICT JSON):\n{\n    \"task_complete\": true/false,\n    \"action_for_assistant\": \"Keep investigating./Apply the fix you mentioned/Keep going (or anything that applies in that case)\"\n}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        96,
+        -16
+      ],
+      "id": "20b9426b-3a95-4113-ae0e-6b3acab6f033",
+      "name": "Basic LLM Chain",
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        96
+      ],
+      "id": "a4f9fe5e-ad14-4a82-af5d-b72d87ed56a7",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"task_complete\": true,\n    \"action_for_assistant\": \"Keep investigating\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        304,
+        176
+      ],
+      "id": "7a000228-7257-48d9-9426-963a52f5f722",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemma-4-31b-it",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        0,
+        176
+      ],
+      "id": "4444c26b-98ee-42f6-be84-8ef952ed84bd",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7Z5Hg5TargviNVTO",
+          "name": "Google Gemini(PaLM) Api account - Alpaca free tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemma-4-26b-a4b-it",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        144,
+        304
+      ],
+      "id": "4c493514-7b1c-4c85-9671-209553a5dac9",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7Z5Hg5TargviNVTO",
+          "name": "Google Gemini(PaLM) Api account - Alpaca free tier"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ec7e5bad-273c-41ff-9ba2-4a9b79e85e82",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d2d30b66daba86c7bf2482ee9dc5807b89e8a5849efc3f1c3f68c562d13e1f9f"
+  },
+  "id": "enbx6RKuSMJOz6lI",
+  "tags": []
+}

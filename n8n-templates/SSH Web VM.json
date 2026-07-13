@@ -1,0 +1,69 @@
+{
+  "name": "SSH Web VM",
+  "nodes": [
+    {
+      "parameters": {
+        "command": "={{ $json.command }}"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        64,
+        272
+      ],
+      "id": "595d08cb-f24c-4537-83cc-cedbf7628fa8",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "TAfo7jkDEKRA7aUF",
+          "name": "web1 SSH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "command"
+            }
+          ]
+        }
+      },
+      "id": "01f6a593-354b-4f80-8eea-7598f6467bb4",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -320,
+        272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d3fa73fe-c4d6-43ae-a830-447e0914a340",
+  "meta": {
+    "instanceId": "d2d30b66daba86c7bf2482ee9dc5807b89e8a5849efc3f1c3f68c562d13e1f9f"
+  },
+  "id": "1Tas5oen9yA73qXn",
+  "tags": []
+}

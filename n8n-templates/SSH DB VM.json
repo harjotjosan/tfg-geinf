@@ -1,0 +1,69 @@
+{
+  "name": "SSH DB VM",
+  "nodes": [
+    {
+      "parameters": {
+        "command": "={{ $json.command }}"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        64,
+        272
+      ],
+      "id": "cf72f29d-12c7-40b6-9a6a-7a28cdda23bf",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "ksSTKbEInuwPcxDm",
+          "name": "SSH DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "command"
+            }
+          ]
+        }
+      },
+      "id": "c47249e6-a4da-4278-9110-7086e1f7095b",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -320,
+        272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3f957b90-5494-40d7-9bb7-86a2977ef8fe",
+  "meta": {
+    "instanceId": "d2d30b66daba86c7bf2482ee9dc5807b89e8a5849efc3f1c3f68c562d13e1f9f"
+  },
+  "id": "VdF8eBEZ2OzEjPvt",
+  "tags": []
+}

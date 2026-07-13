@@ -1,0 +1,162 @@
+{
+  "name": "write documentation to disk",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -176
+      ],
+      "id": "22444fb2-a80b-4cd8-b7c8-cb6e8d7e8229",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "data",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        48
+      ],
+      "id": "6fa93153-33d1-4aba-aced-497489d9fb11",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/home/node/.n8n-files/documentacio/{{ (() => { try { return $('When Executed by Another Workflow').first().json.file_name; } catch(e) { return $('Edit Fields').first().json.file_name; } })() }}",
+        "dataPropertyName": "=data",
+        "options": {
+          "append": false
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        144,
+        48
+      ],
+      "id": "e77ced82-e96d-4881-a8ff-fd87cd979976",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "file_name"
+            },
+            {
+              "name": "data",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -816,
+        48
+      ],
+      "id": "27d3107f-f18f-4a2c-923f-656db01025e8",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "795943cb-96cc-439a-9fc0-1ed7e519e4ce",
+              "name": "file_name",
+              "value": "={{ $now }}_{{ $execution.id }}.md",
+              "type": "string"
+            },
+            {
+              "id": "6aca328c-702b-44a3-ba28-74faf2867c93",
+              "name": "data",
+              "value": "# Test file\n## Subtitle on the test file\nSome actual text on the test file.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        -176
+      ],
+      "id": "8f8276b0-05d7-40ea-b2e4-72349a48c673",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f478651d-60c5-438c-a3a0-ef09190fc2f8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d2d30b66daba86c7bf2482ee9dc5807b89e8a5849efc3f1c3f68c562d13e1f9f"
+  },
+  "id": "7rrsxlapi63mDdgJ",
+  "tags": []
+}

@@ -1,0 +1,69 @@
+{
+  "name": "SSH nginx VM",
+  "nodes": [
+    {
+      "parameters": {
+        "command": "={{ $json.command }}"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        64,
+        272
+      ],
+      "id": "dee2dad7-389a-46a2-8175-cb8345e2b4e8",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "lOULGghX8d66fXgB",
+          "name": "SSH nginx proxy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "command"
+            }
+          ]
+        }
+      },
+      "id": "73f2f009-eaad-4c6e-bcc9-c92c862814fc",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -320,
+        272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c507be51-027a-4698-96d8-916d00319e4f",
+  "meta": {
+    "instanceId": "d2d30b66daba86c7bf2482ee9dc5807b89e8a5849efc3f1c3f68c562d13e1f9f"
+  },
+  "id": "CzLg3MQZgj8q9WDP",
+  "tags": []
+}
