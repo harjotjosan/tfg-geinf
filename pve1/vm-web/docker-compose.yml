@@ -1,0 +1,13 @@
+services:
+  web:
+    build: ../web
+    container_name: carparts-web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: 10.0.27.239
+      DB_PORT: 5432
+      DB_NAME: carparts
+      DB_USER: carparts_user
+      DB_PASSWORD: carparts_pass

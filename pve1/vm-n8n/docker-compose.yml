@@ -1,0 +1,29 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      # Maps standard HTTPS port (443) on your server to n8n (5678)
+      - "443:5678" 
+    environment:
+      - GENERIC_TIMEZONE=Europe/Madrid
+      - TZ=Europe/Madrid
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+      - N8N_RUNNERS_ENABLED=true
+      
+      # --- HTTPS / TLS Settings ---
+      - N8N_PROTOCOL=https
+      - N8N_SSL_CERT=/certs/cert.crt
+      - N8N_SSL_KEY=/certs/cert.key
+      
+      # The :5678 is removed from the URL
+      - WEBHOOK_URL=https://n8n.chestnut-boga.ts.net/ 
+      
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./certs:/certs:ro
+      - ~/documentacio:/home/node/.n8n-files/documentacio
+
+volumes:
+  n8n_data:

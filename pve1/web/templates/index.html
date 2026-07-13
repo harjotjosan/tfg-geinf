@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoParts Catalog</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>AutoParts Catalog</h1>
+    <p>Search and consult available car parts from the company inventory.</p>
+  </header>
+
+  <main>
+    <section class="filters">
+      <form method="GET" action="/">
+        <input type="text" name="q" placeholder="Search by name or part number..." value="{{ q }}">
+
+        <select name="category">
+          <option value="">All categories</option>
+          {% for c in categories %}
+            <option value="{{ c }}" {% if c == selected_category %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit">Search</button>
+      </form>
+    </section>
+
+    {% if not db_ok %}
+      <section class="status error">
+        <strong>Database connection error:</strong> {{ error }}
+      </section>
+    {% endif %}
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Part #</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Manufacturer</th>
+            <th>Stock</th>
+            <th>Price (€)</th>
+            <th>Compatibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in parts %}
+            <tr>
+              <td>{{ p.part_number }}</td>
+              <td>{{ p.name }}</td>
+              <td>{{ p.category }}</td>
+              <td>{{ p.manufacturer }}</td>
+              <td>{{ p.stock }}</td>
+              <td>{{ "%.2f"|format(p.unit_price) }}</td>
+              <td>{{ p.compatibility }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7">No parts found for the current filters.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+services:
+  db:
+    build: ../db
+    container_name: carparts-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: carparts
+      POSTGRES_USER: carparts_user
+      POSTGRES_PASSWORD: carparts_pass
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
