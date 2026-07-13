@@ -1,0 +1,2060 @@
+{
+  "name": "T2: Loki 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        -80
+      ],
+      "id": "7462825b-82d8-40d8-9a09-1818d6446188",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemma-4-31b-it",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        320
+      ],
+      "id": "2bf81a5b-d2af-4f4f-ae7c-a685e9e63477",
+      "name": "Gemini Chat Model Gemma4-31b",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7Z5Hg5TargviNVTO",
+          "name": "Google Gemini(PaLM) Api account - Alpaca free tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are Odin, a senior IT Systems Administrator. Your primary responsibility is to ensure the 3-tier car parts application is fully operational. \n\nINFRASTRUCTURE MAP:\n1. Proxy VM (Nginx): 10.0.27.228 (External access point, Port 443)\n2. Web VM (Python Flask): 10.0.27.223 (Backend API, Port 8000)\n3. DB VM (PostgreSQL): 10.0.27.239 (Database, Port 5432)\n\nTROUBLESHOOTING PRIORITY:\n1. Always start by checking the health of the Proxy VM (10.0.27.228) as it is the gateway.\n2. If the Proxy is up but returns errors (e.g., 502), investigate the Web VM (10.0.27.223).\n3. If the Web App is up but reports database errors (e.g., 503 from /health or connection failures), investigate the DB VM (10.0.27.239).\n\nCRITICAL PERMISSION RULES:\n- You MUST request EXPLICIT APPROVAL before running ANY command that could modify the system.\n- Modifying commands include: docker start/stop/run/rm, systemctl start/stop/restart, sed, iptables -A/-I/-D, echo (into files), rm, kill, etc.\n- Diagnostic commands are PERMITTED without approval: nginx -t, docker ps, netstat, ps, tail, cat, df, du, nc, iptables -L/-S.\n- CRITICAL: When reading log files, you MUST use the `tail` command (e.g., `tail -n 20` or `docker logs --tail 20`) to avoid consuming the entire context window with massive log files. Never use `cat` on log files.\n- Set \"needs_approval\" to true ONLY when you are about to execute a modifying command.\n\nSERVICE-SPECIFIC KNOWLEDGE (DOCKER-BASED):\n- Nginx (Proxy VM): Runs in Docker container \"carparts-proxy\".\n- Web App (Web VM): Runs in Docker container \"carparts-web\". Compose path: ~/tfg-management/pve1/vm-web. If Web app can't talk to DB, run diagnostic: `nc -zv 10.0.27.239 5432` from the Web VM.\n- Database (DB VM): Runs in Docker container \"carparts-db\". If the container is running but inaccessible externally on port 5432, check the firewall rules on the DB host using `sudo iptables -S` or `sudo iptables -L -n -v`. Look for drop rules targeting port 5432 in `INPUT` or `DOCKER-USER` chains.\n\nSYSTEMATIC TROUBLESHOOTING STEPS:\n1. Check website accessibility via HTTP tool.\n2. If down with a 503 error indicating database connection problems, SSH into the Web VM (10.0.27.223) and check if it can reach the DB VM using `nc -zv 10.0.27.239 5432`.\n3. If the connection times out, SSH into the DB VM (10.0.27.239):\n   - Verify the database container `carparts-db` is running: `docker ps`.\n   - If running, inspect the host firewall rules: `sudo iptables -S` or `sudo iptables -L -n -v`.\n   - Identify if there are rules dropping traffic to port 5432 (e.g., in the `INPUT` or `DOCKER-USER` chains).\n4. Explain the findings clearly.\n5. Propose the fix (e.g., `sudo iptables -D DOCKER-USER -p tcp --dport 5432 -j DROP` and/or `sudo iptables -D INPUT -p tcp --dport 5432 -j DROP`) and request approval.\n6. Apply fix after approval and verify connectivity using `nc -zv 10.0.27.239 5432` from the Web VM.\n\nOUTPUT FORMAT (STRICT JSON):\n{\n    \"website_up\": true/false,\n    \"message\": \"Detailed explanation of findings and actions\",\n    \"applied_fix\": true/false,\n    \"needs_approval\": true/false,\n    \"commands_requested\": \"Specific shell commands needing approval (or null)\",\n    \"answered_question\": true/false,\n    \"informe_generat\": true/false\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "38435636-4eb6-46f9-8db0-1482e52f25ad",
+      "name": "AI Agent",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatid }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        400
+      ],
+      "id": "6e0f1b46-47cc-49a4-86d7-4b0ebb7f137d",
+      "name": "Simple Memory",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1232,
+        128
+      ],
+      "id": "ebe62167-078f-4a34-8412-16d2b6918f82",
+      "name": "When chat message received",
+      "webhookId": "1896b11b-c54e-4668-8acd-d1c3101ea525"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1232,
+        368
+      ],
+      "id": "ba00b91b-e964-42f4-ace0-5e8fa5624858",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "06c78232-16af-4302-b9b7-c0a9044ea8cc",
+              "name": "prompt",
+              "value": "does the website have a valid certificate?",
+              "type": "string"
+            },
+            {
+              "id": "899d4474-2ddd-4560-b3ef-be8cd113f6df",
+              "name": "chatid",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        368
+      ],
+      "id": "d891f85a-41f8-42c8-9267-7109eb0eb9ca",
+      "name": "Website Monitor"
+    },
+    {
+      "parameters": {
+        "jsCode": "const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n  const r = Math.random() * 16 | 0;\n  const v = c == 'x' ? r : (r & 0x3 | 0x8);\n  return v.toString(16);\n});\n\nreturn [{ json: { sessionId: uuid } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        368
+      ],
+      "id": "4cea643b-bc55-427d-8b31-8dba4f5b5b1a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aa227949-4bfe-43d1-982a-d69bac14ccd9",
+              "leftValue": "={{ $('OutputParser').item.json.website_up }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        -160
+      ],
+      "id": "bcd4b6e6-e4cd-473d-9460-6208f8921d24",
+      "name": "website up"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemma-4-26b-a4b-it",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        560
+      ],
+      "id": "82e194a8-024c-41eb-b82f-cfeb68d9a1e5",
+      "name": "Gemini Chat Model Gemma4-26b-a4b-it",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7Z5Hg5TargviNVTO",
+          "name": "Google Gemini(PaLM) Api account - Alpaca free tier"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "message": "=Website up:  {{ $('OutputParser').first().json.website_up }}\nMessage: {{ $('OutputParser').item.json.message }}\nNeed Aproval: {{ $('OutputParser').item.json.needs_approval }}\nCommand requested: {{ $('OutputParser').item.json.commands_requested }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 45,
+              "resumeUnit": "minutes"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -256
+      ],
+      "id": "0441cafd-5bc9-4d63-bf43-67ce9bec404a",
+      "name": "Ask for aproval",
+      "webhookId": "ecd85d3f-edef-4097-b2e0-4f5f3219bff4",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "incident-intake",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1232,
+        800
+      ],
+      "id": "da50941e-0638-4610-9427-90f916b60910",
+      "name": "Webhook",
+      "webhookId": "973b8dbc-25a7-4e11-83e9-bbac6e5d93cf"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71543904-2569-4af8-b34a-417a80e0159e",
+              "leftValue": "={{ $json.headers['x-tfg-token'] }}",
+              "rightValue": "canvia-aquest-token",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -912,
+        800
+      ],
+      "id": "7b42d23d-cf45-4b0d-aadd-475df0de0868",
+      "name": "Authenticated"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1491805805987758143",
+          "mode": "list",
+          "cachedResultName": "general",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1491805805987758143"
+        },
+        "content": "Invalid token access attempt.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        896
+      ],
+      "id": "c4362557-df60-4c7f-8509-8a4fc24d1110",
+      "name": "Invalid Token",
+      "webhookId": "840cddff-f0a7-46d0-8403-3a56b1e24996",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n  const r = Math.random() * 16 | 0;\n  const v = c == 'x' ? r : (r & 0x3 | 0x8);\n  return v.toString(16);\n});\n\nreturn [{ json: { sessionId: uuid } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        784
+      ],
+      "id": "bc5d7e9e-6e78-40bd-ba4a-0adf02ada3d7",
+      "name": "sessionID"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "06c78232-16af-4302-b9b7-c0a9044ea8cc",
+              "name": "prompt",
+              "value": "=Incident detected by central rsyslog node:\nevidence: {{ $('Webhook').first().json.body[0].evidence[0] }}\nhost: {{ $('Webhook').first().json.body[0].host }}\nlog_path: {{ $('Webhook').first().json.body[0].log_path }}\npattern: {{ $('Webhook').first().json.body[0].pattern }}\nrecommended_workflow: {{ $('Webhook').first().json.body[0].recommended_workflow }}\nservice: {{ $('Webhook').first().json.body[0].service }}\nseverity: {{ $('Webhook').first().json.body[0].severity }}\nsource: {{ $('Webhook').first().json.body[0].source }}\nsummary: {{ $('Webhook').first().json.body[0].summary }}\ntimestamp: {{ $('Webhook').first().json.body[0].timestamp }}\n\n",
+              "type": "string"
+            },
+            {
+              "id": "899d4474-2ddd-4560-b3ef-be8cd113f6df",
+              "name": "chatid",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        784
+      ],
+      "id": "ecac582b-34ec-461b-b8eb-fbe5b03c7dcf",
+      "name": "Prompt Injection"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3c572c43-6cad-48cf-98b5-a2c28cfc64f3",
+                    "leftValue": "={{ !$('OutputParser').first().json.website_up && !$('OutputParser').first().json.applied_fix && !$('OutputParser').first().json.needs_approval   }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Not finished"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('OutputParser').first().json.website_up }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "9a9709aa-9c92-4d4f-9c38-09290f8b1ff2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Worflow error"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "22825a7e-01d0-4038-8231-90f24112e1a3",
+                    "leftValue": "={{ !$('Fix message').isExecuted && $('OutputParser').first().json.applied_fix &&  !$('Documenta').isExecuted}}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Fix applied"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "928d38b6-4028-45f2-91b4-7d3b60ec724f",
+                    "leftValue": "={{ $('ask a question').isExecuted && \n$('OutputParser').first().json.answered_question \n&& !$('Documenta').isExecuted }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Answer questions"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3e8f3251-698b-4c0b-96fe-ad74ae803eb3",
+                    "leftValue": "={{ $('Documenta').isExecuted}}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Finish"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1184,
+        144
+      ],
+      "id": "5d7ba9cb-7d7e-4e95-83e7-35928a13445b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0fe68c96-4607-480b-95d4-395ee3711002",
+              "leftValue": "={{ $json.needs_approval && !$json.website_up }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        -240
+      ],
+      "id": "f49be5bc-a42e-4590-86bd-c64f1c89a285",
+      "name": "If need aproval"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=-- Workflow update --\nWebsite up: {{ $('OutputParser').item.json.website_up }}\nMessage: {{ $('OutputParser').item.json.message }}\nError: {{ $json.error }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        16
+      ],
+      "id": "544bbae3-f1a3-48f5-9bf9-0ec9dbe3cf08",
+      "name": "Workflow error",
+      "webhookId": "396a7ed7-29fd-4110-8f92-b361a57ed6f5",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "xOFfJhT3qOKWx1a4",
+          "name": "Discord Webhook HIL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "message": "={{ $('OutputParser').first().json.message }}\n---\nWould you like to ask a follow up question?",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "✓ Yes",
+            "disapproveLabel": "✗ No"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        240
+      ],
+      "id": "9d4b8774-5058-45f7-ad2b-7fdda131a54c",
+      "name": "Fix message",
+      "webhookId": "513bd27e-26ba-414e-9005-8fa104aab34c",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c016a647-99b4-43ba-8493-29fe0057400a",
+              "name": "prompt",
+              "value": "={{ $json.data.prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "a4fd2727-c2ff-4757-b415-5309e9281df8",
+              "name": "chatid",
+              "value": "={{ (() => { try { return $('sessionID').first().json.sessionId; } catch(e) { return $('Website Monitor').first().json.chatid; } })() }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        240
+      ],
+      "id": "5560e57d-14e2-4852-93f1-7e91518e6958",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "message": "=Question: \n{{ $('ask a question').first().json.data.prompt }}\n---\nAnswer:\n{{ $('OutputParser').first().json.message }}\n---\nAny further questions?",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "✓ Yes",
+            "disapproveLabel": "✗ No"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        448
+      ],
+      "id": "ecad3af1-f616-4852-ab54-4ce79cc9a5f9",
+      "name": "more questions",
+      "webhookId": "477ed40b-8a3a-4848-9628-7c7459387dcb",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "message": "What would you like to know?",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "prompt",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        240
+      ],
+      "id": "e99f2170-314f-4a3b-844b-2694a9b6135d",
+      "name": "ask a question",
+      "webhookId": "f66e7e50-d9d3-4288-91e9-b179be07e5e7",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a0bd979-3f9e-46e2-9ffa-d2b0b3462eee",
+              "name": "prompt",
+              "value": "=Actua com el mòdul automatitzat de documentació del sistema GEMRAT. Genera un informe tècnic d'incidència d'enginyeria de sistemes, en Català i format Markdown, utilitzant estrictament les dades de l'infraestructura que s'han recollit durant el flux.\n\nProhibida l'especulació, l'ús d'adjectius tous, justificacions vagues o invenció de codis d'incidència. Tot l'informe s'ha de basar en fets i mètriques reals.\n\nESTRUCTURA REQUERIDA DE L'INFORME:\n\n# Informe Tècnic d'Incidència d'Infraestructura\n\n## 1. Resum Executiu\n- **ID execució:** {{ $execution.id }}\n- **Data/Hora Detecció:** [Timestamp de Detecció]\n- **Data/Hora Resolució:** [Timestamp de Reparació/Validació]\n- **Node Afectat:** [Host afectat]\n- **Servei / Contenidor:** [Servei afectat]\n- **Severitat de l'Alerta:** [Gravetat de l'alerta]\n- **Estat Final del Servei:** OPERATIONAL\n\n---\n\n## 2. Símptomes Detectats\nL'alerta s'ha disparat automàticament mitjançant la monitorització de logs centralitzats a 'rsyslog-detector' al fitxer `[Ruta del Log centralitzat]`. \n\nEvidència de la línia de log capturada:\n[Línia de l'evidència original]\n\n---\n\n## 3. Diagnòstic de la Infraestructura\nDesprés de rebre l'alerta, s'han executat comandes de diagnòstic no destructives directament sobre el node afectat:\n\n- **Estat del contenidor Docker (via SSH):**\n  La sortida de la comanda d'inspecció és: `[Sortida de la comanda de diagnòstic Docker]`. \n  *Anàlisi:* Avalua breument si el contenidor porta hores aixecat (el que significa que el problema del worker ha estat gestionat internament pel gestor WSGI/Gunicorn del contenidor sense requerir un reinici complet de Docker) o si s'acaba d'aixecar.\n\n---\n\n## 4. Accions Executades\nDescriu de manera cronològica i concisa les accions realitzades pel flux automatitzat de n8n:\n1. Recepció de la traça del log crític des del servei de detecció de patrons.\n2. Connexió SSH automatitzada al node afectat per verificar l'estat d'execució del contenidor.\n3. Llançament de petició de sondeig HTTP a l'endpoint del servei per validar la disponibilitat real des de l'exterior.\n\n---\n\n## 5. Resultat Final\nA data de `[Timestamp de Reparació/Validació]`, les proves de connectivitat web retornen un codi d'estat `[Sortida de la verificació HTTP (Status Code)]` amb un temps total de resposta de `[Sortida de la verificació HTTP (Temps de resposta)]` segons. El servei se situa operatiu i accessible, confirmant que la incidència s'ha resolt de manera transitòria o auto-reparada.\n\n---\n\n## 6. Errors Pendents o Riscos\n- **Anàlisi de persistència:** En tractar-se d'un error de timeout d'un worker, hi ha un risc de recursió si l'aplicació pateix pics de càrrega de treball o si existeixen consultes bloquejants o bloquejos mutus (deadlocks) amb el node de base de dades central de la infraestructura.\n\n---\n\n## 7. Recomanacions Futures\n- Mantenir el monitoratge estricte d'aquest patró de log. Si la freqüència d'aparició augmenta, es recomana augmentar el valor del paràmetre del temps d'espera (timeout) dels workers dins de la configuració de Gunicorn al desplegament de l'aplicació, o revisar el rendiment de les consultes SQL cap a la base de dades.",
+              "type": "string"
+            },
+            {
+              "id": "bd0d0aea-d217-4a39-bf65-2aea604ae284",
+              "name": "chatid",
+              "value": "={{ (() => { try { return $('sessionID').first().json.sessionId; } catch(e) { return $('Website Monitor').first().json.chatid; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2864,
+        608
+      ],
+      "id": "c7f10383-2cc8-4d33-b87b-da99b9e61eb0",
+      "name": "Documenta"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract the raw output from the AI Agent node\nlet rawOutput = $input.first().json.output;\n\n// Fallback in case your n8n version or model node nests it under 'message'\nif (!rawOutput && $input.first().json.message) {\n    rawOutput = $input.first().json.message.text || $input.first().json.message.content;\n}\n\nlet targetText = '';\n\n// 2. Dynamically determine the structure of the response\nif (Array.isArray(rawOutput)) {\n    // If it's an array (with thinking + text), find the block that is explicitly text\n    const textBlock = rawOutput.find(block => block.type === 'text' || (block.text && !block.thinking));\n    targetText = textBlock ? textBlock.text : '';\n} else if (typeof rawOutput === 'string') {\n    // If the response is already clean, use it directly\n    targetText = rawOutput;\n} else if (typeof rawOutput === 'object' && rawOutput !== null) {\n    // If it's a single direct block object\n    targetText = rawOutput.text || JSON.stringify(rawOutput);\n}\n\n// 3. Defensive clean-up: Strip Markdown fences if the LLM accidentally included them\ntargetText = targetText.replace(/```json/gi, '').replace(/```/gi, '').trim();\n\n// 4. Parse the clean string into a structured JSON object for downstream nodes\ntry {\n    const parsedData = JSON.parse(targetText);\n    \n    // Return the keys directly at the root so n8n can read them natively\n    return parsedData; \n} catch (error) {\n    // Critical failure fallback to prevent the whole workflow from stopping silently\n    return {\n        parsing_failed: true,\n        error_message: error.message,\n        raw_text_recovered: targetText\n    };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -16
+      ],
+      "id": "8a2366e6-fd85-419d-9d47-d32b66c3eafa",
+      "name": "OutputParser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "88038b81-0c80-4076-9353-4ce59deeb42b",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        544,
+        -352
+      ],
+      "id": "884735ae-80eb-42bc-a5c6-83e39b709d0f",
+      "name": "ifAproved"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ffb2767c-6ec2-483a-9314-e036d755c05f",
+              "name": "prompt",
+              "value": "={{ $json.data.approved }}",
+              "type": "string"
+            },
+            {
+              "id": "bec5508e-6327-4727-a200-2436cf87a6c7",
+              "name": "chatid",
+              "value": "={{ (() => { try { return $('sessionID').first().json.sessionId; } catch(e) { return $('Website Monitor').first().json.chatid; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        -240
+      ],
+      "id": "c2531525-64cd-4b47-b7ba-53a66c0cc88d",
+      "name": "takeAction"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ffb2767c-6ec2-483a-9314-e036d755c05f",
+              "name": "prompt",
+              "value": "={{ $('OutputParser').first().json.error_message }}\nPlease rewrite the answer in the correct format.",
+              "type": "string"
+            },
+            {
+              "id": "bec5508e-6327-4727-a200-2436cf87a6c7",
+              "name": "chatid",
+              "value": "={{ (() => { try { return $('sessionID').first().json.sessionId; } catch(e) { return $('Website Monitor').first().json.chatid; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        128
+      ],
+      "id": "711ffb86-f068-416b-b5fc-fdd9f2ed5d1f",
+      "name": "outputRetry"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b6dd5a94-6fe5-4cf4-b4d5-3759f43daf2c",
+              "leftValue": "={{ $json.parsing_failed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        96
+      ],
+      "id": "f3431530-c362-440f-82d9-788570805dcc",
+      "name": "IfNotParsed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "74c132ef-2c60-4ccc-893a-cd42db51c8a2",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1776,
+        416
+      ],
+      "id": "06081e80-f3cd-4df5-bc9c-27100fd0898b",
+      "name": "IfQuestionAsked"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ce3544c6-617d-4dcb-963e-fc7cc237a205",
+              "leftValue": "={{ $('Documenta').isExecuted}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2080,
+        528
+      ],
+      "id": "4cf09e7a-2325-4563-84cb-278a02143041",
+      "name": "if_informe_generat"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "sendTo": "=channel",
+        "userId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "content": "=Workflow finished. ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        192
+      ],
+      "id": "d9ef4322-3bb1-432d-a5ca-64775bc5b20a",
+      "name": "Workflow finished.",
+      "webhookId": "af366dbc-678c-4942-a2e2-d057cde4c264",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "sendTo": "=channel",
+        "userId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "content": "Workflow ended.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        992,
+        -384
+      ],
+      "id": "d53c53e0-5164-4962-9dcc-f4c6834f0d6e",
+      "name": "Workflow ended",
+      "webhookId": "313eb407-7116-40f6-99c1-d5bf45d673fd",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "sendTo": "=channel",
+        "userId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "content": "Generating informe...",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        608
+      ],
+      "id": "1db3d985-2834-4811-9e09-9b63bc5bd7e5",
+      "name": "generating_informe",
+      "webhookId": "efc3d168-5851-4a61-86e9-184f6d6c92e8",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "guildId": {
+          "__rl": true,
+          "value": "1491805805240910018",
+          "mode": "list",
+          "cachedResultName": "TFG",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1500913823287087246",
+          "mode": "list",
+          "cachedResultName": "hil",
+          "cachedResultUrl": "https://discord.com/channels/1491805805240910018/1500913823287087246"
+        },
+        "message": "={{ $('OutputParser').first().json.message }}",
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 0.1,
+              "resumeUnit": "minutes"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        160
+      ],
+      "id": "e300fbed-83a2-4ff6-aa72-2ef61572a01b",
+      "name": "send_informe",
+      "webhookId": "7d3154d7-bbc7-4be0-b018-b77508c8c36e",
+      "credentials": {
+        "discordBotApi": {
+          "id": "O9OeLYkixPXkDklZ",
+          "name": "Odin Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "7rrsxlapi63mDdgJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/7rrsxlapi63mDdgJ",
+          "cachedResultName": "write documentation to disk"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "data": "={{ $('send_informe').item.json.message }}",
+            "file_name": "={{ $now }}_{{ $execution.id }}.md"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3296,
+        192
+      ],
+      "id": "799b407c-c567-42de-8f45-f4ce8b1dc45d",
+      "name": "Call 'write documentation to disk'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "1Tas5oen9yA73qXn",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/1Tas5oen9yA73qXn",
+          "cachedResultName": "SSH Web VM"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "command": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('command', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "command"
+          ],
+          "schema": [
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        96,
+        496
+      ],
+      "id": "4d203547-9152-4067-a9c4-1b086b27aee8",
+      "name": "SSH Web VM"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "CzLg3MQZgj8q9WDP",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/CzLg3MQZgj8q9WDP",
+          "cachedResultName": "SSH nginx VM"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "command": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('command', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "command"
+          ],
+          "schema": [
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        496
+      ],
+      "id": "d2ced1d3-9def-4bb3-82f4-f767f94ed280",
+      "name": "SSH proxy VM"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "VdF8eBEZ2OzEjPvt",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VdF8eBEZ2OzEjPvt",
+          "cachedResultName": "SSH DB VM"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "command": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('command', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "command"
+          ],
+          "schema": [
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        496
+      ],
+      "id": "d031f277-c5cb-4b2a-92ea-23e8a866886e",
+      "name": "SSH DB VM"
+    },
+    {
+      "parameters": {
+        "description": "Useful for checking if the website proxy or upstream server is operational. Returns the status code or the raw network error message.",
+        "jsCode": "// Ensure you use the correct proxy IP/URL from your GEMRAT setup\nconst targetUrl = 'https://10.0.27.228/'; \n\ntry {\n  const response = await this.helpers.request({\n    method: 'GET',\n    url: targetUrl,\n    timeout: 3000, // Hard 3-second network limit. No locking up.\n    validateStatus: function (status) {\n      return true; // Force axios to NEVER throw an error for any status code (2xx, 4xx, 5xx)\n    },\n  });\n\n  return {\n    status: \"executed\",\n    is_up: response.status >= 200 && response.status < 400,\n    http_status_code: response.status,\n    message: `Proxy/Server responded with HTTP status ${response.status}`\n  };\n\n} catch (error) {\n  // Captures ECONNREFUSED, ETIMEDOUT, and host unreachable natively\n  return {\n    status: \"executed\",\n    is_up: false,\n    http_status_code: null,\n    message: `CRITICAL NETWORK ERROR: The proxy or host at ${targetUrl} is completely down. System error: ${error.message}`\n  };\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -48,
+        528
+      ],
+      "id": "39049c6e-72bc-49bf-9081-ae9d351ebcf0",
+      "name": "check_website_status"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ffb2767c-6ec2-483a-9314-e036d755c05f",
+              "name": "prompt",
+              "value": "=Keep trying.",
+              "type": "string"
+            },
+            {
+              "id": "bec5508e-6327-4727-a200-2436cf87a6c7",
+              "name": "chatid",
+              "value": "={{ (() => { try { return $('sessionID').first().json.sessionId; } catch(e) { return $('Website Monitor').first().json.chatid; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1408,
+        -192
+      ],
+      "id": "3711f88e-b7d6-4e00-91c5-9c2450b585e8",
+      "name": "keep_trying"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "enbx6RKuSMJOz6lI",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/enbx6RKuSMJOz6lI",
+          "cachedResultName": "Is the agent finished"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $('OutputParser').item.json.message }}"
+          },
+          "matchingColumns": [
+            "message"
+          ],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1888,
+        16
+      ],
+      "id": "7918585c-a43e-4fe5-a1f3-7a68b7d7c048",
+      "name": "Call 'Is the agent finished'"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ffb2767c-6ec2-483a-9314-e036d755c05f",
+              "name": "prompt",
+              "value": "={{ $('Call \\'Is the agent finished\\'').item.json.output.action_for_assistant }}",
+              "type": "string"
+            },
+            {
+              "id": "bec5508e-6327-4727-a200-2436cf87a6c7",
+              "name": "chatid",
+              "value": "={{ (() => { try { return $('sessionID').first().json.sessionId; } catch(e) { return $('Website Monitor').first().json.chatid; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2368,
+        0
+      ],
+      "id": "97e45aa6-b3c3-47a1-a681-b5e73592ba01",
+      "name": "keep_going"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a413fdb0-16d3-4b72-8640-9c148cfc15b5",
+              "leftValue": "={{ $json.output.task_complete }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2096,
+        16
+      ],
+      "id": "dfe31b7b-b10f-4cd1-a8a7-70efed4de835",
+      "name": "task_not_completed"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2026-06-08T18:32:13.474+02:00",
+          "Readable date": "June 8th 2026, 6:32:13 pm",
+          "Readable time": "6:32:13 pm",
+          "Day of week": "Monday",
+          "Year": "2026",
+          "Month": "June",
+          "Day of month": "08",
+          "Hour": "18",
+          "Minute": "32",
+          "Second": "13",
+          "Timezone": "Europe/Madrid (UTC+02:00)"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Model Gemma4-31b": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "OutputParser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Workflow error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Website Monitor": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Website Monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "website up": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Gemini Chat Model Gemma4-26b-a4b-it": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Ask for aproval": {
+      "main": [
+        [
+          {
+            "node": "ifAproved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Authenticated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticated": {
+      "main": [
+        [
+          {
+            "node": "sessionID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sessionID": {
+      "main": [
+        [
+          {
+            "node": "Prompt Injection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt Injection": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "keep_trying",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Workflow error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fix message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "more questions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send_informe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Workflow error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If need aproval": {
+      "main": [
+        [
+          {
+            "node": "Ask for aproval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "website up",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow error": {
+      "main": [
+        [
+          {
+            "node": "Call 'Is the agent finished'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix message": {
+      "main": [
+        [
+          {
+            "node": "IfQuestionAsked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "more questions": {
+      "main": [
+        [
+          {
+            "node": "IfQuestionAsked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ask a question": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documenta": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OutputParser": {
+      "main": [
+        [
+          {
+            "node": "IfNotParsed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ifAproved": {
+      "main": [
+        [
+          {
+            "node": "takeAction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Workflow ended",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "takeAction": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "outputRetry": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfNotParsed": {
+      "main": [
+        [
+          {
+            "node": "outputRetry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If need aproval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfQuestionAsked": {
+      "main": [
+        [
+          {
+            "node": "ask a question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "if_informe_generat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_informe_generat": {
+      "main": [
+        [
+          {
+            "node": "Workflow finished.",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "generating_informe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generating_informe": {
+      "main": [
+        [
+          {
+            "node": "Documenta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_informe": {
+      "main": [
+        [
+          {
+            "node": "Workflow finished.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow finished.": {
+      "main": [
+        [
+          {
+            "node": "Call 'write documentation to disk'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH Web VM": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH proxy VM": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH DB VM": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_website_status": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keep_trying": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Is the agent finished'": {
+      "main": [
+        [
+          {
+            "node": "task_not_completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "task_not_completed": {
+      "main": [
+        [
+          {
+            "node": "keep_going",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Workflow ended",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keep_going": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e26af3df-8159-46ee-b801-c0f860722836",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d2d30b66daba86c7bf2482ee9dc5807b89e8a5849efc3f1c3f68c562d13e1f9f"
+  },
+  "id": "fxZD0POpZhVURZAi",
+  "tags": [
+    {
+      "updatedAt": "2026-06-16T11:39:53.030Z",
+      "createdAt": "2026-06-16T11:39:53.030Z",
+      "id": "AsyZFcHUqW3FjKpL",
+      "name": "Demo"
+    }
+  ]
+}
