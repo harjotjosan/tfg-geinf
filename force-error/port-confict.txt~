@@ -1,0 +1,5 @@
+# Stop the website container
+docker stop website
+
+# Start a Python web server on the same port
+python3 -m http.server 8090
