@@ -7,7 +7,11 @@ enabled = false # Desactivat per estalviar recursos en l'entorn LXC
 # --- 1. SOURCE: Tail del log de Carparts ---
 [sources.rsyslog_logs]
 type = "file"
-include = ["/var/log/remote/10.0.27.223/docker-carparts-web.log"]
+include = [
+  "/var/log/remote/10.0.27.223/docker-carparts-web.log",
+  "/var/log/remote/10.0.27.228/docker-carparts-proxy.log",
+  "/var/log/remote/10.0.27.239/docker-carparts-db.log",
+]
 read_from = "end"
 
 # --- 2. TRANSFORM: Filtre i estructuració de l'incident ---
